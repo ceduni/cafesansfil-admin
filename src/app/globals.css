@@ -1,8 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light mode colors */
+  --background: #faf8f5;
+  --foreground: #3d2914;
+  --sidebar: #2d1b0e;
+  --sidebar-foreground: #f4f1eb;
+  --card: #ffffff;
+  --card-foreground: #3d2914;
+  --border: #d4c4a8;
+  --primary: #8b4513;
+  --primary-foreground: #ffffff;
+  --secondary: #d4c4a8;
+  --secondary-foreground: #3d2914;
+  --muted: #faf8f5;
+  --muted-foreground: #8b6f47;
+  --accent: #d4c4a8;
+  --accent-foreground: #3d2914;
+  --destructive: #d32f2f;
+  --destructive-foreground: #ffffff;
+  --success: #8b4513;
+  --warning: #d2691e;
 }
 
 @theme inline {
@@ -12,15 +30,263 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Removed media query to prevent conflicts with manual theme switching */
+
+/* Dark mode when .dark class is present */
+.dark {
+  --background: #1a0f08;
+  --foreground: #f4f1eb;
+  --sidebar: #0d0704;
+  --sidebar-foreground: #f4f1eb;
+  --card: #2d1b0e;
+  --card-foreground: #f4f1eb;
+  --border: #8b6f47;
+  --primary: #d2691e;
+  --primary-foreground: #ffffff;
+  --secondary: #8b6f47;
+  --secondary-foreground: #f4f1eb;
+  --muted: #1a0f08;
+  --muted-foreground: #8b6f47;
+  --accent: #8b6f47;
+  --accent-foreground: #f4f1eb;
+  --destructive: #ff6b6b;
+  --destructive-foreground: #ffffff;
+  --success: #d2691e;
+  --warning: #ffa726;
+}
+
+/* Force background changes with higher specificity */
+.dark body {
+  background: var(--background) !important;
+}
+
+.dark .admin-layout {
+  background: var(--background) !important;
+}
+
+.dark .main-content {
+  background: var(--background) !important;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Admin Panel Layout */
+.admin-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+  background: var(--background);
+}
+
+/* Café-themed styling */
+.cafe-header {
+  background: linear-gradient(135deg, var(--primary) 0%, #8b4513 50%, var(--sidebar) 100%);
+  color: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.cafe-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transition: all 0.2s ease;
+}
+
+.cafe-card:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  transform: translateY(-2px);
+}
+
+.sidebar {
+  background: var(--sidebar);
+  color: var(--sidebar-foreground);
+  padding: 1.5rem;
+  border-right: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.main-content {
+  padding: 2rem;
+  background: var(--background);
+  overflow-y: auto;
+}
+
+/* Cards */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: var(--secondary-foreground);
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.btn-success {
+  background: var(--success);
+  color: white;
+}
+
+.btn-success:hover {
+  background: #059669;
+}
+
+.btn-destructive {
+  background: var(--destructive);
+  color: var(--destructive-foreground);
+}
+
+.btn-destructive:hover {
+  background: #dc2626;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--foreground);
+  margin-bottom: 0.5rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  min-height: 100px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+}
+
+/* Navigation */
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  color: var(--sidebar-foreground);
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  margin-bottom: 0.25rem;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active {
+  background: var(--primary);
+  color: white;
+}
+
+/* Status indicators */
+.status-online {
+  color: var(--success);
+}
+
+.status-offline {
+  color: var(--destructive);
+}
+
+.status-warning {
+  color: var(--warning);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar {
+    display: none;
+  }
+  
+  .main-content {
+    padding: 1rem;
+  }
 }
