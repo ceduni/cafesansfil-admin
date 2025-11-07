@@ -14,6 +14,7 @@ import ContactEditor from "../../components/ContactEditor";
 import SocialMediaEditor from "../../components/SocialMediaEditor";
 import OwnerEditor from "../../components/OwnerEditor";
 import StaffEditor from "../../components/StaffEditor";
+import CafeInfoEditor from "../../components/CafeInfoEditor";
 import { Cafe } from "../../types/cafe";
 
 export default function HomePage() {
@@ -145,7 +146,7 @@ export default function HomePage() {
                             </div>
                             <div>
                                 <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>Location</div>
-                                <div>{cafe?.location?.pavillon}</div>
+                                <div>Pavillon {cafe?.location?.pavillon}</div>
                             </div>
                         </div>
                     </div>
@@ -156,12 +157,14 @@ export default function HomePage() {
                             Quick Stats
                         </h3>
                         <div style={{ display: "grid", gap: "1rem" }}>
+                            {/*
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span>Staff Members</span>
                                 <span style={{ fontWeight: "600", color: "var(--primary)" }}>
                                     {((cafe?.staff?.admins?.length || 0) + (cafe?.staff?.volunteers?.length || 0)) || 0}
                                 </span>
                             </div>
+                            */}
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span>Menu Items</span>
                                 <span style={{ fontWeight: "600", color: "var(--primary)" }}>
@@ -176,6 +179,14 @@ export default function HomePage() {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                {/* Cafe Info Editor */}
+                <div id="cafe-info" className="cafe-card" style={{ marginTop: "1.5rem" }}>
+                    <CafeInfoEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
+                    />
                 </div>
 
                 {/* Description Editor */}
@@ -243,13 +254,14 @@ export default function HomePage() {
                     />
                 </div>
 
-                {/* Staff Editor */}
+                {/* Staff Editor 
                 <div id="staff" className="cafe-card" style={{ marginTop: "1.5rem" }}>
                     <StaffEditor
                         cafe={cafe}
                         onUpdate={setCafe}
                     />
                 </div>
+                */}
             </div>
         </div>
     );

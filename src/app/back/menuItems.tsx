@@ -65,13 +65,19 @@ export async function createMenuItem(cafeSlug: string, payload: CreateMenuItemPa
             throw new Error('Not authenticated');
         }
 
+        // Format price to always have 2 decimal places
+        const formattedPayload = {
+            ...payload,
+            price: parseFloat(payload.price.toFixed(2))
+        };
+
         const response = await fetch(`/api/cafes/${cafeSlug}/menu/items`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(formattedPayload),
         });
 
         if (!response.ok) {

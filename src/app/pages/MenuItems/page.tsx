@@ -432,24 +432,34 @@ export default function MenuItemsPage() {
 
                                 <div className="form-group">
                                     <label className="form-label">Categories</label>
-                                    <select
-                                        multiple
-                                        value={formData.category_ids}
-                                        onChange={(e) =>
-                                            setFormData({
-                                                ...formData,
-                                                category_ids: Array.from(e.target.selectedOptions, (option) => option.value),
-                                            })
-                                        }
-                                        className="form-input"
-                                        style={{ height: "100px" }}
-                                    >
-                                        {categories.map((cat) => (
-                                            <option key={cat.id} value={cat.id}>
-                                                {cat.name}
-                                            </option>
-                                        ))}
-                                    </select>
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0.5rem", border: "1px solid var(--border)", borderRadius: "0.5rem", maxHeight: "150px", overflowY: "auto" }}>
+                                        {categories.length === 0 ? (
+                                            <div style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>No categories available. Create one below.</div>
+                                        ) : (
+                                            categories.map((cat) => (
+                                                <label key={cat.id} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer" }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={formData.category_ids.includes(cat.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    category_ids: [...formData.category_ids, cat.id],
+                                                                });
+                                                            } else {
+                                                                setFormData({
+                                                                    ...formData,
+                                                                    category_ids: formData.category_ids.filter((id) => id !== cat.id),
+                                                                });
+                                                            }
+                                                        }}
+                                                    />
+                                                    <span>{cat.name}</span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Create category inline */}

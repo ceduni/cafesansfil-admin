@@ -183,15 +183,17 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
                 <span style={{ fontWeight: "500" }}>
                   {PAYMENT_METHODS.find(m => m.value === payment.method)?.label || payment.method}
                 </span>
-                <span style={{
-                  background: "var(--primary)",
-                  color: "white",
-                  padding: "0.25rem 0.5rem",
-                  borderRadius: "0.25rem",
-                  fontSize: "0.875rem"
-                }}>
-                  Min: ${payment.minimum}
-                </span>
+                {payment.minimum && (
+                  <span style={{
+                    background: "var(--primary)",
+                    color: "white",
+                    padding: "0.25rem 0.5rem",
+                    borderRadius: "0.25rem",
+                    fontSize: "0.875rem"
+                  }}>
+                    Min: ${payment.minimum}
+                  </span>
+                )}
               </div>
             ))
           ) : (

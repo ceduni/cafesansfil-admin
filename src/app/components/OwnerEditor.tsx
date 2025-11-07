@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Cafe, Owner } from "../types/cafe";
-import { updateCafe } from "../back/update";
+import { updateUser, UpdateUserPayload } from "../back/user";
+import { uploadImage } from "../back/update";
 
 interface OwnerEditorProps {
   cafe: Cafe;
@@ -14,21 +15,53 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
   const [owner, setOwner] = useState<Owner>(cafe.owner);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
       setError(null);
 
-      await updateCafe(cafe.slug, { owner });
+      // Build the payload with only changed fields
+      const payload: UpdateUserPayload = {};
 
-      onUpdate({ ...cafe, owner });
+      if (owner.username !== cafe.owner.username) payload.username = owner.username;
+      if (owner.email !== cafe.owner.email) payload.email = owner.email;
+      if (owner.first_name !== cafe.owner.first_name) payload.first_name = owner.first_name;
+      if (owner.last_name !== cafe.owner.last_name) payload.last_name = owner.last_name;
+      if (owner.photo_url !== cafe.owner.photo_url) payload.photo_url = owner.photo_url;
+
+      // Only make the API call if there are changes
+      if (Object.keys(payload).length === 0) {
+        setIsEditing(false);
+        return;
+      }
+
+      const updatedUser = await updateUser(payload);
+
+      // Update the cafe object with the new owner data
+      onUpdate({ ...cafe, owner: updatedUser });
+      setOwner(updatedUser);
       setIsEditing(false);
     } catch (err: any) {
       console.error('Error saving owner:', err);
       setError(err.message || 'Failed to save owner information');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (file: File) => {
+    try {
+      setIsUploadingImage(true);
+      setError(null);
+      const url = await uploadImage(file);
+      setOwner({ ...owner, photo_url: url });
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      setError(err.message || 'Failed to upload image');
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -107,14 +140,37 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
             </div>
 
             <div className="form-group" style={{ gridColumn: "1 / -1" }}>
-              <label className="form-label">Photo URL</label>
+              <label className="form-label">Photo</label>
               <input
-                type="url"
-                value={owner.photo_url}
-                onChange={(e) => updateOwner('photo_url', e.target.value)}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleImageUpload(file);
+                }}
                 className="form-input"
-                placeholder="https://example.com/photo.jpg"
+                disabled={isUploadingImage || isSaving}
               />
+              {isUploadingImage && (
+                <p style={{ marginTop: "0.5rem", color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
+                  Uploading image...
+                </p>
+              )}
+              {owner.photo_url && (
+                <div style={{ marginTop: "0.5rem" }}>
+                  <img
+                    src={owner.photo_url}
+                    alt="Owner photo preview"
+                    style={{
+                      width: "100px",
+                      height: "100px",
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      border: "2px solid var(--border)"
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
