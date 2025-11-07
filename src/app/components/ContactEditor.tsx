@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cafe, Contact } from "../types/cafe";
+import { updateCafe } from "../back/update";
 
 interface ContactEditorProps {
   cafe: Cafe;
@@ -11,15 +12,30 @@ interface ContactEditorProps {
 export default function ContactEditor({ cafe, onUpdate }: ContactEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [contact, setContact] = useState<Contact>(cafe.contact);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    onUpdate({ ...cafe, contact });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      await updateCafe(cafe.slug, { contact });
+
+      onUpdate({ ...cafe, contact });
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Error saving contact:', err);
+      setError(err.message || 'Failed to save contact information');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setContact(cafe.contact);
     setIsEditing(false);
+    setError(null);
   };
 
   const updateContact = (field: keyof Contact, value: string) => {
@@ -33,7 +49,7 @@ export default function ContactEditor({ cafe, onUpdate }: ContactEditorProps) {
           Contact Information
         </h3>
         {!isEditing && (
-          <button 
+          <button
             onClick={() => setIsEditing(true)}
             className="btn btn-secondary"
             style={{ fontSize: "0.875rem" }}
@@ -80,20 +96,33 @@ export default function ContactEditor({ cafe, onUpdate }: ContactEditorProps) {
             </div>
           </div>
 
+          {error && (
+            <div style={{
+              padding: "0.75rem",
+              marginTop: "1rem",
+              backgroundColor: "var(--destructive-bg)",
+              color: "var(--destructive-text)",
+              border: "1px solid var(--destructive)",
+              borderRadius: "0.375rem"
+            }}>
+              {error}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-            <button onClick={handleSave} className="btn btn-success">
-              Save Changes
+            <button onClick={handleSave} className="btn btn-success" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
-            <button onClick={handleCancel} className="btn btn-secondary">
+            <button onClick={handleCancel} className="btn btn-secondary" disabled={isSaving}>
               Cancel
             </button>
           </div>
         </div>
       ) : (
         <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>
@@ -105,9 +134,9 @@ export default function ContactEditor({ cafe, onUpdate }: ContactEditorProps) {
             </p>
           </div>
 
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>
@@ -119,17 +148,17 @@ export default function ContactEditor({ cafe, onUpdate }: ContactEditorProps) {
             </p>
           </div>
 
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>
             <h4 style={{ fontWeight: "600", marginBottom: "0.5rem", color: "var(--primary)" }}>Website</h4>
             <p style={{ margin: "0.25rem 0", wordBreak: "break-all" }}>
-              <a 
-                href={contact.website} 
-                target="_blank" 
+              <a
+                href={contact.website}
+                target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: "var(--primary)", textDecoration: "none" }}
               >

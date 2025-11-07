@@ -2,6 +2,8 @@
 
 import fetchCafe from "@/app/back/fetch";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { getUser, getAccessToken } from "../../back/post";
 import EditDescription from "../../components/EditDescription";
 import Sidebar from "../../components/Sidebar";
 import ImageEditor from "../../components/ImageEditor";
@@ -15,13 +17,57 @@ import StaffEditor from "../../components/StaffEditor";
 import { Cafe } from "../../types/cafe";
 
 export default function HomePage() {
+    const router = useRouter();
     const [cafe, setCafe] = useState<Cafe | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    
+    const [error, setError] = useState<string | null>(null);
+
     useEffect(() => {
-        setIsLoading(true);
-        fetchCafe("acquis-de-droit").then(setCafe).finally(() => setIsLoading(false));
-    }, []);
+        const initializePage = async () => {
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                // Check if user is authenticated
+                const accessToken = getAccessToken();
+                if (!accessToken) {
+                    router.push("/pages/Login");
+                    return;
+                }
+
+                // Get user data
+                const user = getUser();
+                if (!user) {
+                    router.push("/pages/Login");
+                    return;
+                }
+
+                // Get the first owned cafe
+                const ownedCafes = user.cafes.filter(cafe => cafe.role === 'OWNER');
+                if (ownedCafes.length === 0) {
+                    setError("You don't own any cafes");
+                    return;
+                }
+
+                // Fetch the first owned cafe's details
+                const cafeSlug = ownedCafes[0].slug;
+                const cafeData = await fetchCafe(cafeSlug);
+
+                if (cafeData) {
+                    setCafe(cafeData);
+                } else {
+                    setError("Failed to load cafe data");
+                }
+            } catch (err: any) {
+                console.error("Error loading page:", err);
+                setError(err.message || "An error occurred");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        initializePage();
+    }, [router]);
 
     const handleDescriptionUpdate = (newDescription: string) => {
         if (cafe) {
@@ -42,6 +88,25 @@ export default function HomePage() {
                 </div>
             </div>
         );
+    }
+
+    if (error) {
+        return (
+            <div className="admin-layout">
+                <Sidebar />
+                <div className="main-content">
+                    <div className="card" style={{ textAlign: "center", padding: "3rem" }}>
+                        <div style={{ fontSize: "1.5rem", marginBottom: "1rem", color: "var(--destructive)" }}>Error</div>
+                        <h2>{error}</h2>
+                        <p style={{ color: "var(--muted-foreground)" }}>Please try again or contact support.</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!cafe) {
+        return null;
     }
 
     return (
@@ -94,7 +159,7 @@ export default function HomePage() {
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                 <span>Staff Members</span>
                                 <span style={{ fontWeight: "600", color: "var(--primary)" }}>
-                                    {cafe?.staff?.admins?.length + cafe?.staff?.volunteers?.length || 0}
+                                    {((cafe?.staff?.admins?.length || 0) + (cafe?.staff?.volunteers?.length || 0)) || 0}
                                 </span>
                             </div>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -115,71 +180,72 @@ export default function HomePage() {
 
                 {/* Description Editor */}
                 <div id="description" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <EditDescription 
-                        description={cafe?.description || ""} 
-                        setDescription={handleDescriptionUpdate} 
+                    <EditDescription
+                        description={cafe?.description || ""}
+                        setDescription={handleDescriptionUpdate}
+                        cafeSlug={cafe.slug}
                     />
                 </div>
 
                 {/* Image Editor */}
                 <div id="images" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <ImageEditor 
-                        cafe={cafe} 
-                        onUpdate={setCafe} 
+                    <ImageEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
                     />
                 </div>
 
                 {/* Opening Hours Editor */}
                 <div id="opening-hours" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <OpeningHoursEditor 
-                        cafe={cafe} 
-                        onUpdate={setCafe} 
+                    <OpeningHoursEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
                     />
                 </div>
 
                 {/* Payment Methods Editor */}
                 <div id="payment-methods" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <PaymentMethodsEditor 
-                        cafe={cafe} 
-                        onUpdate={setCafe} 
+                    <PaymentMethodsEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
                     />
                 </div>
 
                 {/* Location Editor */}
                 <div id="location" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <LocationEditor 
-                        cafe={cafe} 
-                        onUpdate={setCafe} 
+                    <LocationEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
                     />
                 </div>
 
                 {/* Contact Editor */}
                 <div id="contact" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <ContactEditor 
-                        cafe={cafe} 
-                        onUpdate={setCafe} 
+                    <ContactEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
                     />
                 </div>
 
                 {/* Social Media Editor */}
                 <div id="social-media" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <SocialMediaEditor 
-                        cafe={cafe} 
-                        onUpdate={setCafe} 
+                    <SocialMediaEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
                     />
                 </div>
 
                 {/* Owner Editor */}
                 <div id="owner" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <OwnerEditor 
-                        cafe={cafe} 
-                        onUpdate={setCafe} 
+                    <OwnerEditor
+                        cafe={cafe}
+                        onUpdate={setCafe}
                     />
                 </div>
 
                 {/* Staff Editor */}
                 <div id="staff" className="cafe-card" style={{ marginTop: "1.5rem" }}>
-                    <StaffEditor 
+                    <StaffEditor
                         cafe={cafe}
                         onUpdate={setCafe}
                     />

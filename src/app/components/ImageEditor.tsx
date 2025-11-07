@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cafe } from "../types/cafe";
+import { updateCafe, uploadImage } from "../back/update";
 
 interface ImageEditorProps {
   cafe: Cafe;
@@ -13,6 +14,8 @@ export default function ImageEditor({ cafe, onUpdate }: ImageEditorProps) {
   const [images, setImages] = useState<string[]>(cafe.photo_urls || []);
   const [bannerUrl, setBannerUrl] = useState<string>(cafe.banner_url || "");
   const [newImageUrl, setNewImageUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleAddImage = () => {
     if (newImageUrl.trim() && images.length < 5) {
@@ -34,9 +37,46 @@ export default function ImageEditor({ cafe, onUpdate }: ImageEditorProps) {
     onUpdate({ ...cafe, banner_url: url });
   };
 
-  const handleSave = () => {
-    onUpdate({ ...cafe, photo_urls: images, banner_url: bannerUrl });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+
+      await updateCafe(cafe.slug, {
+        photo_urls: images,
+        banner_url: bannerUrl
+      });
+
+      onUpdate({ ...cafe, photo_urls: images, banner_url: bannerUrl });
+      setIsEditing(false);
+    } catch (error: any) {
+      console.error('Error saving images:', error);
+      setUploadError(error.message || 'Failed to save images');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (file: File, type: 'banner' | 'gallery') => {
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+
+      const url = await uploadImage(file);
+
+      if (type === 'banner') {
+        setBannerUrl(url);
+      } else {
+        if (images.length < 5) {
+          setImages([...images, url]);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      setUploadError(error.message || 'Failed to upload image');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleCancel = () => {
@@ -49,10 +89,10 @@ export default function ImageEditor({ cafe, onUpdate }: ImageEditorProps) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
         <h3 style={{ fontSize: "1.25rem", fontWeight: "600", color: "var(--primary)" }}>
-          Café Images ({images.length}/5)
+          Café Images
         </h3>
         {!isEditing && (
-          <button 
+          <button
             onClick={() => setIsEditing(true)}
             className="btn btn-secondary"
             style={{ fontSize: "0.875rem" }}
@@ -69,25 +109,31 @@ export default function ImageEditor({ cafe, onUpdate }: ImageEditorProps) {
             <h4 style={{ fontSize: "1rem", fontWeight: "600", marginBottom: "1rem", color: "var(--primary)" }}>
               Banner Image
             </h4>
+
             <div className="form-group">
-              <label className="form-label">Banner Image URL</label>
+              <label className="form-label">Upload Banner Image</label>
               <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file, 'banner');
+                }}
                 className="form-input"
-                type="url"
-                value={bannerUrl}
-                onChange={(e) => handleBannerUpdate(e.target.value)}
-                placeholder="https://example.com/banner.jpg"
+                disabled={isUploading}
               />
             </div>
+
+
             {bannerUrl && (
               <div style={{ marginTop: "1rem" }}>
-                <img 
-                  src={bannerUrl} 
+                <img
+                  src={bannerUrl}
                   alt="Banner preview"
-                  style={{ 
-                    width: "100%", 
-                    height: "200px", 
-                    objectFit: "cover", 
+                  style={{
+                    width: "100%",
+                    height: "200px",
+                    objectFit: "cover",
                     borderRadius: "0.5rem",
                     border: "2px solid var(--border)"
                   }}
@@ -96,73 +142,26 @@ export default function ImageEditor({ cafe, onUpdate }: ImageEditorProps) {
             )}
           </div>
 
-          {/* Gallery Images Section */}
-          <div style={{ marginBottom: "2rem" }}>
-            <h4 style={{ fontSize: "1rem", fontWeight: "600", marginBottom: "1rem", color: "var(--primary)" }}>
-              Gallery Images ({images.length}/5)
-            </h4>
-            <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", marginBottom: "1rem" }}>
-              {images.map((url, index) => (
-                <div key={index} style={{ position: "relative" }}>
-                  <img 
-                    src={url} 
-                    alt={`Café image ${index + 1}`}
-                    style={{ 
-                      width: "100%", 
-                      height: "150px", 
-                      objectFit: "cover", 
-                      borderRadius: "0.5rem",
-                      border: "2px solid var(--border)"
-                    }}
-                  />
-                  <button
-                    onClick={() => handleRemoveImage(index)}
-                    className="btn btn-destructive"
-                    style={{
-                      position: "absolute",
-                      top: "0.5rem",
-                      right: "0.5rem",
-                      padding: "0.25rem",
-                      fontSize: "0.75rem"
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
 
-            {images.length < 5 && (
-              <div style={{ marginBottom: "1rem" }}>
-                <div className="form-group">
-                  <label className="form-label">Add New Gallery Image URL</label>
-                  <div style={{ display: "flex", gap: "0.5rem" }}>
-                    <input
-                      className="form-input"
-                      type="url"
-                      value={newImageUrl}
-                      onChange={(e) => setNewImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      style={{ flex: 1 }}
-                    />
-                    <button 
-                      onClick={handleAddImage}
-                      className="btn btn-primary"
-                      disabled={!newImageUrl.trim() || images.length >= 5}
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+
+          {uploadError && (
+            <div style={{
+              marginBottom: "1rem",
+              padding: "0.75rem",
+              background: "var(--destructive)",
+              color: "white",
+              borderRadius: "0.5rem",
+              fontSize: "0.875rem"
+            }}>
+              {uploadError}
+            </div>
+          )}
 
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button onClick={handleSave} className="btn btn-success">
-              Save Changes
+            <button onClick={handleSave} className="btn btn-success" disabled={isUploading}>
+              {isUploading ? "Saving..." : "Save Changes"}
             </button>
-            <button onClick={handleCancel} className="btn btn-secondary">
+            <button onClick={handleCancel} className="btn btn-secondary" disabled={isUploading}>
               Cancel
             </button>
           </div>
@@ -175,13 +174,13 @@ export default function ImageEditor({ cafe, onUpdate }: ImageEditorProps) {
               <h4 style={{ fontSize: "1rem", fontWeight: "600", marginBottom: "1rem", color: "var(--primary)" }}>
                 Banner Image
               </h4>
-              <img 
-                src={bannerUrl} 
+              <img
+                src={bannerUrl}
                 alt="Café banner"
-                style={{ 
-                  width: "100%", 
-                  height: "200px", 
-                  objectFit: "cover", 
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  objectFit: "cover",
                   borderRadius: "0.5rem",
                   border: "2px solid var(--border)"
                 }}
@@ -189,41 +188,7 @@ export default function ImageEditor({ cafe, onUpdate }: ImageEditorProps) {
             </div>
           )}
 
-          {/* Gallery Images Display */}
-          <div>
-            <h4 style={{ fontSize: "1rem", fontWeight: "600", marginBottom: "1rem", color: "var(--primary)" }}>
-              Gallery Images ({images.length}/5)
-            </h4>
-            <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
-              {images.length > 0 ? (
-                images.map((url, index) => (
-                  <img 
-                    key={index}
-                    src={url} 
-                    alt={`Café image ${index + 1}`}
-                    style={{ 
-                      width: "100%", 
-                      height: "150px", 
-                      objectFit: "cover", 
-                      borderRadius: "0.5rem",
-                      border: "2px solid var(--border)"
-                    }}
-                  />
-                ))
-              ) : (
-                <div style={{ 
-                  padding: "2rem", 
-                  textAlign: "center", 
-                  color: "var(--muted-foreground)",
-                  border: "2px dashed var(--border)",
-                  borderRadius: "0.5rem",
-                  gridColumn: "1 / -1"
-                }}>
-                  No gallery images available. Click Edit to add some.
-                </div>
-              )}
-            </div>
-          </div>
+
         </div>
       )}
     </div>

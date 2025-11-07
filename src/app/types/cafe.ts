@@ -41,7 +41,6 @@ export interface Owner {
   id: string;
   username: string;
   email: string;
-  matricule: string;
   first_name: string;
   last_name: string;
   photo_url: string;
@@ -52,7 +51,6 @@ export interface StaffMember {
   id: string;
   username: string;
   email: string;
-  matricule: string;
   first_name: string;
   last_name: string;
   photo_url: string;
@@ -78,21 +76,48 @@ export interface MenuCategory {
 
 export interface MenuItem {
   id: string;
+  cafe_id: string;
+  category_ids: string[];
   name: string;
-  description: string;
+  description: string | null;
   tags: string[];
-  image_url: string;
+  image_url: string | null;
   price: number;
   in_stock: boolean;
   likes: string[];
-  barecode: string;
-  nutritional_informations: MenuNutriInfo[];
+  barecode: string | null;
+  nutritional_informations: NutritionalInformations | null;
   health_score: number;
   options: MenuItemOption[];
-  interactions: any[];
 }
+
 export interface MenuItemOption {
-  
+  type: string;
+  value: string;
+  fee: number;
+}
+
+export interface NutritionalInformations {
+  calories?: number;
+  lipids?: number;
+  proteins?: number;
+  carbohydrates?: number;
+  sugar?: number;
+  sodium?: number;
+  fiber?: number;
+  saturated_fat?: number;
+  zinc?: number;
+  iron?: number;
+  calcium?: number;
+  magnesium?: number;
+  potassium?: number;
+  vitamina?: number;
+  vitaminc?: number;
+  vitamind?: number;
+  vitamine?: number;
+  vitamink?: number;
+  vitaminb6?: number;
+  vitaminb12?: number;
 }
 
 export interface MenuNutriInfo {
@@ -115,6 +140,21 @@ export interface MenuNutriInfo {
   vitamind: number;
   vitaminb6: number;
   vitaminb12: number;
+}
+
+export interface MenuItemsResponse {
+  items: MenuItem[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+  links: {
+    first: string;
+    last: string;
+    self: string;
+    next: string | null;
+    prev: string | null;
+  };
 }
 
 export interface Menu {

@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useTheme } from "../contexts/ThemeContext";
 import { useState, useEffect } from "react";
+import { logout, getUser } from "../back/post";
 
 export default function Sidebar() {
   const router = useRouter();
   const { isDarkMode, toggleTheme } = useTheme();
   const [activeSection, setActiveSection] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
 
   const scrollToSection = (sectionId: string) => {
     const element = document.getElementById(sectionId);
@@ -22,14 +24,14 @@ export default function Sidebar() {
         if (start === null) start = currentTime;
         const timeElapsed = currentTime - start;
         const progress = Math.min(timeElapsed / duration, 1);
-        
+
         // Easing function for smooth animation (ease-in-out)
-        const easeInOut = progress < 0.5 
-          ? 2 * progress * progress 
+        const easeInOut = progress < 0.5
+          ? 2 * progress * progress
           : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-        
+
         window.scrollTo(0, startPosition + distance * easeInOut);
-        
+
         if (timeElapsed < duration) {
           requestAnimationFrame(animation);
         }
@@ -49,16 +51,16 @@ export default function Sidebar() {
 
   const menuItems = [
     { name: "Dashboard", icon: "D", path: "/pages/HomePage" },
-    { name: "Description", icon: "T", sectionId: "description" },
-    { name: "Images", icon: "I", sectionId: "images" },
-    { name: "Opening Hours", icon: "H", sectionId: "opening-hours" },
-    { name: "Payment Methods", icon: "P", sectionId: "payment-methods" },
-    { name: "Location", icon: "L", sectionId: "location" },
-    { name: "Contact", icon: "C", sectionId: "contact" },
-    { name: "Social Media", icon: "S", sectionId: "social-media" },
-    { name: "Owner", icon: "O", sectionId: "owner" },
-    { name: "Staff", icon: "S", sectionId: "staff" }
+    { name: "Menu Items", icon: "🍽️", path: "/pages/MenuItems" },
   ];
+
+  // Get user info on mount
+  useEffect(() => {
+    const user = getUser();
+    if (user) {
+      setUserName(`${user.first_name} ${user.last_name}`);
+    }
+  }, []);
 
   // Track active section on scroll
   useEffect(() => {
@@ -119,24 +121,24 @@ export default function Sidebar() {
   }, []);
 
   return (
-    <div className="sidebar" style={{ 
-      position: "sticky", 
-      top: "0", 
-      height: "100vh", 
-      overflowY: "auto" 
+    <div className="sidebar" style={{
+      position: "sticky",
+      top: "0",
+      height: "100vh",
+      overflowY: "auto"
     }}>
       <div style={{ marginBottom: "2rem" }}>
-        <h1 style={{ 
-          fontSize: "1.5rem", 
-          fontWeight: "bold", 
+        <h1 style={{
+          fontSize: "1.5rem",
+          fontWeight: "bold",
           color: "var(--sidebar-foreground)",
           marginBottom: "0.5rem"
         }}>
           Admin Panel
         </h1>
-        <p style={{ 
-          fontSize: "0.875rem", 
-          color: "var(--muted-foreground)" 
+        <p style={{
+          fontSize: "0.875rem",
+          color: "var(--muted-foreground)"
         }}>
           Cafe Management System
         </p>
@@ -150,8 +152,8 @@ export default function Sidebar() {
               key={item.name}
               onClick={() => handleMenuClick(item)}
               className="nav-item"
-              style={{ 
-                width: "100%", 
+              style={{
+                width: "100%",
                 textAlign: "left",
                 background: isActive ? "var(--primary)" : "none",
                 color: isActive ? "var(--primary-foreground)" : "var(--sidebar-foreground)",
@@ -184,15 +186,15 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div style={{ 
-        marginTop: "auto", 
+      <div style={{
+        marginTop: "auto",
         paddingTop: "2rem",
         borderTop: "1px solid var(--border)"
       }}>
         {/* Theme Toggle */}
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
+        <div style={{
+          display: "flex",
+          alignItems: "center",
           justifyContent: "space-between",
           padding: "0.75rem",
           background: "rgba(255, 255, 255, 0.05)",
@@ -234,18 +236,61 @@ export default function Sidebar() {
           </button>
         </div>
 
+        {/* User Info */}
+        {userName && (
+          <div style={{
+            padding: "0.75rem",
+            background: "rgba(255, 255, 255, 0.05)",
+            borderRadius: "0.5rem",
+            marginBottom: "1rem"
+          }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--muted-foreground)", marginBottom: "0.25rem" }}>
+              Logged in as
+            </div>
+            <div style={{ fontSize: "0.875rem", fontWeight: "600" }}>
+              {userName}
+            </div>
+          </div>
+        )}
+
+        {/* Logout Button */}
+        <button
+          onClick={logout}
+          style={{
+            width: "100%",
+            padding: "0.75rem",
+            background: "var(--destructive)",
+            color: "white",
+            border: "none",
+            borderRadius: "0.5rem",
+            cursor: "pointer",
+            fontSize: "0.875rem",
+            fontWeight: "600",
+            marginBottom: "1rem",
+            transition: "all 0.2s ease"
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "0.9";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+        >
+          🚪 Logout
+        </button>
+
         {/* System Status */}
-        <div style={{ 
-          display: "flex", 
-          alignItems: "center", 
+        <div style={{
+          display: "flex",
+          alignItems: "center",
           padding: "0.75rem",
           background: "rgba(255, 255, 255, 0.05)",
           borderRadius: "0.5rem"
         }}>
-          <div style={{ 
-            width: "8px", 
-            height: "8px", 
-            borderRadius: "50%", 
+          <div style={{
+            width: "8px",
+            height: "8px",
+            borderRadius: "50%",
             background: "var(--success)",
             marginRight: "0.5rem"
           }}></div>

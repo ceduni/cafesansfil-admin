@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cafe, PaymentDetails } from "../types/cafe";
+import { updateCafe } from "../back/update";
 
 interface PaymentMethodsEditorProps {
   cafe: Cafe;
@@ -12,15 +13,13 @@ const PAYMENT_METHODS = [
   { value: "CREDIT", label: "Credit Card" },
   { value: "DEBIT", label: "Debit Card" },
   { value: "CASH", label: "Cash" },
-  { value: "INTERAC", label: "Interac" },
-  { value: "PAYPAL", label: "PayPal" },
-  { value: "APPLE_PAY", label: "Apple Pay" },
-  { value: "GOOGLE_PAY", label: "Google Pay" }
 ];
 
 export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails[]>(cafe.payment_details || []);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const addPaymentMethod = () => {
     setPaymentDetails([...paymentDetails, { method: "CREDIT", minimum: "0" }]);
@@ -36,14 +35,38 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
     setPaymentDetails(paymentDetails.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
-    onUpdate({ ...cafe, payment_details: paymentDetails });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      // Convert minimum strings to numbers for API
+      // Omit the `minimum` field when the parsed value is 0 or not a number
+      const formattedPaymentDetails = paymentDetails.map(pd => {
+        const min = parseFloat(String(pd.minimum));
+        const entry: { method: string; minimum?: number } = { method: pd.method };
+        if (!isNaN(min) && min > 0) {
+          entry.minimum = min;
+        }
+        return entry;
+      });
+
+      await updateCafe(cafe.slug, { payment_details: formattedPaymentDetails });
+
+      onUpdate({ ...cafe, payment_details: paymentDetails });
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Error saving payment methods:', err);
+      setError(err.message || 'Failed to save payment methods');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setPaymentDetails(cafe.payment_details || []);
     setIsEditing(false);
+    setError(null);
   };
 
   return (
@@ -53,7 +76,7 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
           Payment Methods
         </h3>
         {!isEditing && (
-          <button 
+          <button
             onClick={() => setIsEditing(true)}
             className="btn btn-secondary"
             style={{ fontSize: "0.875rem" }}
@@ -67,9 +90,9 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
         <div>
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1rem" }}>
             {paymentDetails.map((payment, index) => (
-              <div key={index} style={{ 
-                padding: "1rem", 
-                border: "1px solid var(--border)", 
+              <div key={index} style={{
+                padding: "1rem",
+                border: "1px solid var(--border)",
                 borderRadius: "0.5rem",
                 background: "var(--muted)"
               }}>
@@ -88,7 +111,7 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className="form-group" style={{ flex: 1 }}>
                     <label className="form-label">Minimum Amount ($)</label>
                     <input
@@ -101,7 +124,7 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
                       placeholder="0.00"
                     />
                   </div>
-                  
+
                   <button
                     onClick={() => removePaymentMethod(index)}
                     className="btn btn-destructive"
@@ -114,7 +137,7 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
             ))}
           </div>
 
-          <button 
+          <button
             onClick={addPaymentMethod}
             className="btn btn-primary"
             style={{ marginBottom: "1rem" }}
@@ -122,11 +145,24 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
             Add Payment Method
           </button>
 
+          {error && (
+            <div style={{
+              padding: "0.75rem",
+              marginBottom: "1rem",
+              backgroundColor: "var(--destructive-bg)",
+              color: "var(--destructive-text)",
+              border: "1px solid var(--destructive)",
+              borderRadius: "0.375rem"
+            }}>
+              {error}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button onClick={handleSave} className="btn btn-success">
-              Save Changes
+            <button onClick={handleSave} className="btn btn-success" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
-            <button onClick={handleCancel} className="btn btn-secondary">
+            <button onClick={handleCancel} className="btn btn-secondary" disabled={isSaving}>
               Cancel
             </button>
           </div>
@@ -135,9 +171,9 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           {paymentDetails.length > 0 ? (
             paymentDetails.map((payment, index) => (
-              <div key={index} style={{ 
-                display: "flex", 
-                justifyContent: "space-between", 
+              <div key={index} style={{
+                display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
                 padding: "0.75rem",
                 border: "1px solid var(--border)",
@@ -147,10 +183,10 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
                 <span style={{ fontWeight: "500" }}>
                   {PAYMENT_METHODS.find(m => m.value === payment.method)?.label || payment.method}
                 </span>
-                <span style={{ 
-                  background: "var(--primary)", 
-                  color: "white", 
-                  padding: "0.25rem 0.5rem", 
+                <span style={{
+                  background: "var(--primary)",
+                  color: "white",
+                  padding: "0.25rem 0.5rem",
                   borderRadius: "0.25rem",
                   fontSize: "0.875rem"
                 }}>
@@ -159,9 +195,9 @@ export default function PaymentMethodsEditor({ cafe, onUpdate }: PaymentMethodsE
               </div>
             ))
           ) : (
-            <div style={{ 
-              padding: "2rem", 
-              textAlign: "center", 
+            <div style={{
+              padding: "2rem",
+              textAlign: "center",
               color: "var(--muted-foreground)",
               border: "2px dashed var(--border)",
               borderRadius: "0.5rem"

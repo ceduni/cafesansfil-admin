@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cafe, SocialMedia } from "../types/cafe";
+import { updateCafe } from "../back/update";
 
 interface SocialMediaEditorProps {
   cafe: Cafe;
@@ -11,10 +12,24 @@ interface SocialMediaEditorProps {
 export default function SocialMediaEditor({ cafe, onUpdate }: SocialMediaEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [socialMedia, setSocialMedia] = useState<SocialMedia>(cafe.social_media);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    onUpdate({ ...cafe, social_media: socialMedia });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      await updateCafe(cafe.slug, { social_media: socialMedia });
+
+      onUpdate({ ...cafe, social_media: socialMedia });
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Error saving social media:', err);
+      setError(err.message || 'Failed to save social media');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -33,7 +48,7 @@ export default function SocialMediaEditor({ cafe, onUpdate }: SocialMediaEditorP
           Social Media
         </h3>
         {!isEditing && (
-          <button 
+          <button
             onClick={() => setIsEditing(true)}
             className="btn btn-secondary"
             style={{ fontSize: "0.875rem" }}
@@ -80,29 +95,42 @@ export default function SocialMediaEditor({ cafe, onUpdate }: SocialMediaEditorP
             </div>
           </div>
 
+          {error && (
+            <div style={{
+              marginTop: "1rem",
+              padding: "0.75rem",
+              background: "var(--destructive)",
+              color: "white",
+              borderRadius: "0.5rem",
+              fontSize: "0.875rem"
+            }}>
+              {error}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-            <button onClick={handleSave} className="btn btn-success">
-              Save Changes
+            <button onClick={handleSave} className="btn btn-success" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
-            <button onClick={handleCancel} className="btn btn-secondary">
+            <button onClick={handleCancel} className="btn btn-secondary" disabled={isSaving}>
               Cancel
             </button>
           </div>
         </div>
       ) : (
         <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>
             <h4 style={{ fontWeight: "600", marginBottom: "0.5rem", color: "var(--primary)" }}>Facebook</h4>
             {socialMedia.facebook ? (
               <p style={{ margin: "0.25rem 0", wordBreak: "break-all" }}>
-                <a 
-                  href={socialMedia.facebook} 
-                  target="_blank" 
+                <a
+                  href={socialMedia.facebook}
+                  target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--primary)", textDecoration: "none" }}
                 >
@@ -114,18 +142,18 @@ export default function SocialMediaEditor({ cafe, onUpdate }: SocialMediaEditorP
             )}
           </div>
 
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>
             <h4 style={{ fontWeight: "600", marginBottom: "0.5rem", color: "var(--primary)" }}>Instagram</h4>
             {socialMedia.instagram ? (
               <p style={{ margin: "0.25rem 0", wordBreak: "break-all" }}>
-                <a 
-                  href={socialMedia.instagram} 
-                  target="_blank" 
+                <a
+                  href={socialMedia.instagram}
+                  target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--primary)", textDecoration: "none" }}
                 >
@@ -137,18 +165,18 @@ export default function SocialMediaEditor({ cafe, onUpdate }: SocialMediaEditorP
             )}
           </div>
 
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>
             <h4 style={{ fontWeight: "600", marginBottom: "0.5rem", color: "var(--primary)" }}>X (Twitter)</h4>
             {socialMedia.x ? (
               <p style={{ margin: "0.25rem 0", wordBreak: "break-all" }}>
-                <a 
-                  href={socialMedia.x} 
-                  target="_blank" 
+                <a
+                  href={socialMedia.x}
+                  target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--primary)", textDecoration: "none" }}
                 >

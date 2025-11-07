@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { updateCafe } from "../back/update";
 
 interface EditDescriptionProps {
     description: string;
     setDescription: (value: string) => void;
+    cafeSlug: string;
 }
 
-export default function EditDescription({ description, setDescription }: EditDescriptionProps) {
+export default function EditDescription({ description, setDescription, cafeSlug }: EditDescriptionProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [tempDescription, setTempDescription] = useState(description);
     const [isSaving, setIsSaving] = useState(false);
@@ -16,17 +18,17 @@ export default function EditDescription({ description, setDescription }: EditDes
     const handleSave = async () => {
         setIsSaving(true);
         setSaveStatus('idle');
-        
+
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await updateCafe(cafeSlug, { description: tempDescription });
             setDescription(tempDescription);
             setSaveStatus('success');
             setIsEditing(false);
-            
+
             // Reset success status after 3 seconds
             setTimeout(() => setSaveStatus('idle'), 3000);
         } catch (error) {
+            console.error('Error saving description:', error);
             setSaveStatus('error');
             setTimeout(() => setSaveStatus('idle'), 3000);
         } finally {
@@ -49,7 +51,7 @@ export default function EditDescription({ description, setDescription }: EditDes
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                 <h3 style={{ fontSize: "1.25rem", fontWeight: "600" }}>Cafe Description</h3>
                 {!isEditing && (
-                    <button 
+                    <button
                         onClick={handleEdit}
                         className="btn btn-secondary"
                         style={{ fontSize: "0.875rem" }}
@@ -63,24 +65,24 @@ export default function EditDescription({ description, setDescription }: EditDes
                 <div>
                     <div className="form-group">
                         <label className="form-label">Description</label>
-                        <textarea 
+                        <textarea
                             className="form-textarea"
-                            value={tempDescription} 
+                            value={tempDescription}
                             onChange={(e) => setTempDescription(e.target.value)}
                             placeholder="Enter cafe description..."
                             rows={4}
                         />
                     </div>
-                    
+
                     <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-                        <button 
+                        <button
                             onClick={handleSave}
                             className="btn btn-success"
                             disabled={isSaving}
                         >
                             {isSaving ? "Saving..." : "Save Changes"}
                         </button>
-                        <button 
+                        <button
                             onClick={handleCancel}
                             className="btn btn-secondary"
                             disabled={isSaving}
@@ -90,11 +92,11 @@ export default function EditDescription({ description, setDescription }: EditDes
                     </div>
 
                     {saveStatus === 'success' && (
-                        <div style={{ 
-                            marginTop: "1rem", 
-                            padding: "0.75rem", 
-                            background: "var(--success)", 
-                            color: "white", 
+                        <div style={{
+                            marginTop: "1rem",
+                            padding: "0.75rem",
+                            background: "var(--success)",
+                            color: "white",
                             borderRadius: "0.5rem",
                             fontSize: "0.875rem"
                         }}>
@@ -103,11 +105,11 @@ export default function EditDescription({ description, setDescription }: EditDes
                     )}
 
                     {saveStatus === 'error' && (
-                        <div style={{ 
-                            marginTop: "1rem", 
-                            padding: "0.75rem", 
-                            background: "var(--destructive)", 
-                            color: "white", 
+                        <div style={{
+                            marginTop: "1rem",
+                            padding: "0.75rem",
+                            background: "var(--destructive)",
+                            color: "white",
                             borderRadius: "0.5rem",
                             fontSize: "0.875rem"
                         }}>
@@ -117,10 +119,10 @@ export default function EditDescription({ description, setDescription }: EditDes
                 </div>
             ) : (
                 <div>
-                    <div style={{ 
-                        padding: "1rem", 
-                        background: "var(--muted)", 
-                        borderRadius: "0.5rem", 
+                    <div style={{
+                        padding: "1rem",
+                        background: "var(--muted)",
+                        borderRadius: "0.5rem",
                         border: "1px solid var(--border)",
                         minHeight: "100px",
                         whiteSpace: "pre-wrap"

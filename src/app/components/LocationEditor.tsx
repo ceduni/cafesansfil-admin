@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cafe, Location } from "../types/cafe";
+import { updateCafe } from "../back/update";
 
 interface LocationEditorProps {
   cafe: Cafe;
@@ -11,15 +12,30 @@ interface LocationEditorProps {
 export default function LocationEditor({ cafe, onUpdate }: LocationEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [location, setLocation] = useState<Location>(cafe.location);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSave = () => {
-    onUpdate({ ...cafe, location });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      await updateCafe(cafe.slug, { location });
+
+      onUpdate({ ...cafe, location });
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Error saving location:', err);
+      setError(err.message || 'Failed to save location');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setLocation(cafe.location);
     setIsEditing(false);
+    setError(null);
   };
 
   const updateLocation = (field: keyof Location, value: any) => {
@@ -43,7 +59,7 @@ export default function LocationEditor({ cafe, onUpdate }: LocationEditorProps) 
           Location Information
         </h3>
         {!isEditing && (
-          <button 
+          <button
             onClick={() => setIsEditing(true)}
             className="btn btn-secondary"
             style={{ fontSize: "0.875rem" }}
@@ -134,20 +150,33 @@ export default function LocationEditor({ cafe, onUpdate }: LocationEditorProps) 
             </div>
           </div>
 
+          {error && (
+            <div style={{
+              padding: "0.75rem",
+              marginTop: "1rem",
+              backgroundColor: "var(--destructive-bg)",
+              color: "var(--destructive-text)",
+              border: "1px solid var(--destructive)",
+              borderRadius: "0.375rem"
+            }}>
+              {error}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-            <button onClick={handleSave} className="btn btn-success">
-              Save Changes
+            <button onClick={handleSave} className="btn btn-success" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
-            <button onClick={handleCancel} className="btn btn-secondary">
+            <button onClick={handleCancel} className="btn btn-secondary" disabled={isSaving}>
               Cancel
             </button>
           </div>
         </div>
       ) : (
         <div style={{ display: "grid", gap: "1rem", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))" }}>
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>
@@ -157,9 +186,9 @@ export default function LocationEditor({ cafe, onUpdate }: LocationEditorProps) 
             <p style={{ margin: "0.25rem 0" }}><strong>Floor:</strong> {location.floor}</p>
           </div>
 
-          <div style={{ 
-            padding: "1rem", 
-            border: "1px solid var(--border)", 
+          <div style={{
+            padding: "1rem",
+            border: "1px solid var(--border)",
             borderRadius: "0.5rem",
             background: "var(--muted)"
           }}>

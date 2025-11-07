@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Cafe, OpeningHours, OpeningHoursBlock } from "../types/cafe";
+import { updateCafe } from "../back/update";
 
 interface OpeningHoursEditorProps {
   cafe: Cafe;
@@ -21,6 +22,8 @@ const DAYS = [
 export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [openingHours, setOpeningHours] = useState<OpeningHours[]>(cafe.opening_hours || []);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const getDayHours = (day: string): OpeningHoursBlock[] => {
     const dayData = openingHours.find(h => h.day === day);
@@ -54,14 +57,27 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
     updateDayHours(day, updatedBlocks);
   };
 
-  const handleSave = () => {
-    onUpdate({ ...cafe, opening_hours: openingHours });
-    setIsEditing(false);
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      setError(null);
+
+      await updateCafe(cafe.slug, { opening_hours: openingHours });
+
+      onUpdate({ ...cafe, opening_hours: openingHours });
+      setIsEditing(false);
+    } catch (err: any) {
+      console.error('Error saving opening hours:', err);
+      setError(err.message || 'Failed to save opening hours');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setOpeningHours(cafe.opening_hours || []);
     setIsEditing(false);
+    setError(null);
   };
 
   return (
@@ -71,7 +87,7 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
           Opening Hours
         </h3>
         {!isEditing && (
-          <button 
+          <button
             onClick={() => setIsEditing(true)}
             className="btn btn-secondary"
             style={{ fontSize: "0.875rem" }}
@@ -87,15 +103,15 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
             {DAYS.map(day => {
               const dayHours = getDayHours(day.key);
               return (
-                <div key={day.key} style={{ 
-                  padding: "1rem", 
-                  border: "1px solid var(--border)", 
+                <div key={day.key} style={{
+                  padding: "1rem",
+                  border: "1px solid var(--border)",
                   borderRadius: "0.5rem",
                   background: "var(--muted)"
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                     <h4 style={{ fontWeight: "600", color: "var(--foreground)" }}>{day.label}</h4>
-                    <button 
+                    <button
                       onClick={() => addTimeBlock(day.key)}
                       className="btn btn-primary"
                       style={{ fontSize: "0.75rem", padding: "0.25rem 0.5rem" }}
@@ -103,13 +119,13 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
                       Add Time
                     </button>
                   </div>
-                  
+
                   {dayHours.length > 0 ? (
                     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                       {dayHours.map((block, blockIndex) => (
-                        <div key={blockIndex} style={{ 
-                          display: "flex", 
-                          alignItems: "center", 
+                        <div key={blockIndex} style={{
+                          display: "flex",
+                          alignItems: "center",
                           gap: "0.5rem",
                           padding: "0.5rem",
                           background: "var(--card)",
@@ -141,8 +157,8 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
                       ))}
                     </div>
                   ) : (
-                    <div style={{ 
-                      color: "var(--muted-foreground)", 
+                    <div style={{
+                      color: "var(--muted-foreground)",
                       fontStyle: "italic",
                       textAlign: "center",
                       padding: "1rem"
@@ -155,11 +171,24 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
             })}
           </div>
 
+          {error && (
+            <div style={{
+              marginTop: "1rem",
+              padding: "0.75rem",
+              background: "var(--destructive)",
+              color: "white",
+              borderRadius: "0.5rem",
+              fontSize: "0.875rem"
+            }}>
+              {error}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
-            <button onClick={handleSave} className="btn btn-success">
-              Save Changes
+            <button onClick={handleSave} className="btn btn-success" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save Changes"}
             </button>
-            <button onClick={handleCancel} className="btn btn-secondary">
+            <button onClick={handleCancel} className="btn btn-secondary" disabled={isSaving}>
               Cancel
             </button>
           </div>
@@ -169,9 +198,9 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
           {DAYS.map(day => {
             const dayHours = getDayHours(day.key);
             return (
-              <div key={day.key} style={{ 
-                display: "flex", 
-                justifyContent: "space-between", 
+              <div key={day.key} style={{
+                display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
                 padding: "0.75rem",
                 border: "1px solid var(--border)",
@@ -182,10 +211,10 @@ export default function OpeningHoursEditor({ cafe, onUpdate }: OpeningHoursEdito
                 <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                   {dayHours.length > 0 ? (
                     dayHours.map((block, index) => (
-                      <span key={index} style={{ 
-                        background: "var(--primary)", 
-                        color: "white", 
-                        padding: "0.25rem 0.5rem", 
+                      <span key={index} style={{
+                        background: "var(--primary)",
+                        color: "white",
+                        padding: "0.25rem 0.5rem",
                         borderRadius: "0.25rem",
                         fontSize: "0.875rem"
                       }}>
