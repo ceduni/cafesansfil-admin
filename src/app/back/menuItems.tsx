@@ -169,3 +169,32 @@ export async function fetchCategories(cafeSlug: string) {
         throw error;
     }
 }
+
+export async function createCategory(cafeSlug: string, payload: { name: string; description?: string }) {
+    try {
+        const accessToken = getAccessToken();
+
+        if (!accessToken) {
+            throw new Error('Not authenticated');
+        }
+
+        const response = await fetch(`/api/cafes/${cafeSlug}/menu/categories`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Failed to create category');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Create category error:', error);
+        throw error;
+    }
+}

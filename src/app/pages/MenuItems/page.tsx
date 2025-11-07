@@ -11,6 +11,7 @@ import {
     updateMenuItem,
     deleteMenuItem,
     fetchCategories,
+    createCategory,
     CreateMenuItemPayload,
 } from "../../back/menuItems";
 import { uploadImage } from "../../back/update";
@@ -26,6 +27,7 @@ export default function MenuItemsPage() {
     const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
 
     // Form state
     const [formData, setFormData] = useState<CreateMenuItemPayload>({
@@ -38,6 +40,12 @@ export default function MenuItemsPage() {
         in_stock: true,
         options: [],
     });
+
+    // New category creation state
+    const [newCategoryName, setNewCategoryName] = useState("");
+    const [newCategoryDescription, setNewCategoryDescription] = useState("");
+    const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+    const [categoryError, setCategoryError] = useState<string | null>(null);
 
     useEffect(() => {
         const initializePage = async () => {
@@ -73,7 +81,8 @@ export default function MenuItemsPage() {
                 ]);
 
                 setItems(itemsData.items);
-                setCategories(categoriesData.items || []);
+                // API returns array directly: [{ id, name, description }]
+                setCategories(Array.isArray(categoriesData) ? categoriesData : []);
             } catch (err: any) {
                 console.error("Error loading page:", err);
                 setError(err.message || "An error occurred");
@@ -162,6 +171,29 @@ export default function MenuItemsPage() {
         }
     };
 
+    const handleCreateCategory = async () => {
+        if (!newCategoryName.trim()) {
+            setCategoryError('Name is required');
+            return;
+        }
+
+        try {
+            setIsCreatingCategory(true);
+            setCategoryError(null);
+            const created = await createCategory(cafeSlug, { name: newCategoryName.trim(), description: newCategoryDescription || undefined });
+            // Append to list and select it
+            setCategories((prev) => [created, ...prev]);
+            setFormData({ ...formData, category_ids: [...(formData.category_ids || []), created.id] });
+            setNewCategoryName('');
+            setNewCategoryDescription('');
+        } catch (err: any) {
+            console.error('Create category failed', err);
+            setCategoryError(err.message || 'Failed to create category');
+        } finally {
+            setIsCreatingCategory(false);
+        }
+    };
+
     const addOption = () => {
         setFormData({
             ...formData,
@@ -183,7 +215,8 @@ export default function MenuItemsPage() {
     };
 
     const filteredItems = items.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        (selectedCategoryFilter ? (item.category_ids || []).includes(selectedCategoryFilter) : true)
     );
 
     if (isLoading) {
@@ -238,6 +271,27 @@ export default function MenuItemsPage() {
                     </button>
                 </div>
 
+                {/* Category quick filters */}
+                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+                    <button
+                        className={`btn ${selectedCategoryFilter === null ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setSelectedCategoryFilter(null)}
+                        style={{ padding: '0.4rem 0.6rem' }}
+                    >
+                        All
+                    </button>
+                    {categories.map((cat) => (
+                        <button
+                            key={cat.id}
+                            className={`btn ${selectedCategoryFilter === cat.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setSelectedCategoryFilter((prev) => (prev === cat.id ? null : cat.id))}
+                            style={{ padding: '0.4rem 0.6rem' }}
+                        >
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Items Grid */}
                 <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
                     {filteredItems.map((item) => (
@@ -256,6 +310,24 @@ export default function MenuItemsPage() {
                                 />
                             )}
                             <h3 style={{ fontSize: "1.25rem", fontWeight: "600", marginBottom: "0.5rem" }}>{item.name}</h3>
+                            {/* Category names for the item */}
+                            {item.category_ids && item.category_ids.length > 0 && (
+                                <div style={{ marginBottom: "0.5rem", display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    {item.category_ids.map((cid) => {
+                                        const cat = categories.find((c) => c.id === cid);
+                                        if (!cat) return null;
+                                        return (
+                                            <span key={cid} style={{
+                                                background: 'var(--muted)',
+                                                color: 'var(--foreground)',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '0.25rem',
+                                                fontSize: '0.85rem'
+                                            }}>{cat.name}</span>
+                                        );
+                                    })}
+                                </div>
+                            )}
                             {item.description && (
                                 <p style={{ color: "var(--muted-foreground)", marginBottom: "1rem", fontSize: "0.875rem" }}>
                                     {item.description}
@@ -378,6 +450,33 @@ export default function MenuItemsPage() {
                                             </option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {/* Create category inline */}
+                                <div className="form-group" style={{ marginTop: "0.5rem" }}>
+                                    <label className="form-label">Create New Category</label>
+                                    <div style={{ display: "grid", gap: "0.5rem", gridTemplateColumns: "1fr 1fr auto" }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Category name"
+                                            value={newCategoryName}
+                                            onChange={(e) => setNewCategoryName(e.target.value)}
+                                            className="form-input"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Short description (optional)"
+                                            value={newCategoryDescription}
+                                            onChange={(e) => setNewCategoryDescription(e.target.value)}
+                                            className="form-input"
+                                        />
+                                        <button type="button" onClick={handleCreateCategory} className="btn btn-primary" disabled={isCreatingCategory}>
+                                            {isCreatingCategory ? "Creating..." : "Create"}
+                                        </button>
+                                    </div>
+                                    {categoryError && (
+                                        <div style={{ color: "var(--destructive)", marginTop: "0.5rem" }}>{categoryError}</div>
+                                    )}
                                 </div>
 
                                 <div className="form-group">
