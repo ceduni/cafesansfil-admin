@@ -49,9 +49,10 @@ export default function Sidebar() {
     }
   };
 
-  const menuItems = [
-    { name: "Dashboard", icon: "D", path: "/pages/HomePage" },
+  const menuItems: Array<{ name: string; icon: string; path?: string; sectionId?: string }> = [
+    { name: "Dashboard", icon: "ℹ️", path: "/pages/HomePage" },
     { name: "Menu Items", icon: "🍽️", path: "/pages/MenuItems" },
+    { name: "Events", icon: "📅", path: "/pages/Events" },
   ];
 
   // Get user info on mount
