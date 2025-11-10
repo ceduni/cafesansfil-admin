@@ -1,9 +1,34 @@
 "use client";
 
+import styles from './login.module.css'
+import Image from "next/image";
 import Form from "../../components/Form";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { login, getCurrentUser, saveTokens, saveUser } from "../../back/post";
+
+
+type Translations = Record<string, Record<string, string>>;
+
+const trans: Translations = {
+  "en": {
+    "sign_in": "Sign in to manage your cafe",
+    "username.placeholder": "Enter your username",
+    "password.placeholder": "Enter your password",
+  },
+  "fr": {
+    "sign_in": "Connectez-vous pour gérer votre café",
+    "username.placeholder": "Entrez votre nom d'utilisateur",
+    "password.placeholder": "Entrez votre mot de passe",
+  }
+}
+
+type Lang = keyof typeof trans;
+type TranslationKey<L extends Lang> = keyof typeof trans[L];
+
+const lang: Lang = "fr";
+
+const t = (k: string) => trans[lang]?.[k] ?? k;
 
 export default function Login() {
   const router = useRouter();
@@ -61,97 +86,39 @@ export default function Login() {
   };
 
   return (
-    <div style={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background: "linear-gradient(135deg, var(--primary) 0%, #8b4513 50%, var(--sidebar) 100%)",
-      padding: "1rem"
-    }}>
-      <div className="card" style={{
-        width: "100%",
-        maxWidth: "400px",
-        boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04)"
-      }}>
+    <div className={styles["login-container"]}>
+      <div className={`card ${styles["login-card"]}`}>
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
-          <div style={{
-            fontSize: "3rem",
-            marginBottom: "1rem",
-            background: "linear-gradient(135deg, var(--primary), #8b4513, var(--sidebar))",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text"
-          }}>
-            CAFE
+          <div className={styles["login-card__logo"]}>
+            <Image src="/logo.png" alt="Café sans-fil logo" width={100} height={100} />
           </div>
-          <h1 style={{
-            fontSize: "1.875rem",
-            fontWeight: "bold",
-            marginBottom: "0.5rem",
-            color: "var(--foreground)"
-          }}>
+
+          <h1 className={styles["login-card__title"]}>
             Admin Panel
           </h1>
           <p style={{ color: "var(--muted-foreground)" }}>
-            Sign in to manage your cafe
+            {t("sign_in")}
           </p>
         </div>
 
         <div style={{ marginBottom: "1.5rem" }}>
-          <Form
-            title="Username"
-            inputType="text"
-            value={username}
-            onChange={setUsername}
-            placeholder="Enter your username"
-            required
-            disabled={isLoading}
-          />
-          <Form
-            title="Password"
-            inputType="password"
-            value={password}
-            onChange={setPassword}
-            placeholder="Enter your password"
-            required
-            disabled={isLoading}
-          />
+          <Form title="Username" inputType="text" value={username} onChange={setUsername} placeholder={t("username.placeholder")} required disabled={isLoading} />
+          <Form title="Password" inputType="password" value={password} onChange={setPassword} placeholder={t("password.placeholder")} required disabled={isLoading} />
         </div>
 
         {error && (
-          <div style={{
-            marginBottom: "1rem",
-            padding: "0.75rem",
-            background: "var(--destructive)",
-            color: "white",
-            borderRadius: "0.5rem",
-            fontSize: "0.875rem"
-          }}>
+          <div className={styles["login-card__error"]}>
             {error}
           </div>
         )}
 
-        <button
-          onClick={handleLogin}
-          onKeyPress={handleKeyPress}
-          className="btn btn-primary"
-          disabled={isLoading}
-          style={{
-            width: "100%",
-            padding: "0.75rem",
-            fontSize: "1rem",
-            fontWeight: "600"
-          }}
-        >
+        <button onClick={handleLogin} onKeyUp={handleKeyPress} className={`btn btn-primary ${styles["login-card__login-button"]}`} disabled={isLoading}>
           {isLoading ? (
             "Signing in..."
           ) : (
             "Sign In"
           )}
         </button>
-
-
       </div>
     </div>
   );

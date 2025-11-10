@@ -4,10 +4,10 @@ const API_BASE_URL = 'https://cafesansfil-api-r0kj.onrender.com/api';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { slug: string } }
+    context: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { slug } = params;
+        const { slug } = await context.params;
         const { searchParams } = new URL(request.url);
         const page = searchParams.get('page') || '1';
         const size = searchParams.get('size') || '50';
@@ -50,10 +50,10 @@ export async function GET(
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: { slug: string } }
+    context: { params: Promise<{ slug: string }> }
 ) {
     try {
-        const { slug } = params;
+        const { slug } = await context.params;
         const authHeader = request.headers.get('authorization');
 
         if (!authHeader) {

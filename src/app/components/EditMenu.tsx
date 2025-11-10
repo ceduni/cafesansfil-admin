@@ -1,7 +1,7 @@
-interface EditMenuProps {
-    cafe: Cafe;
-    onUpdate: (cafe: Cafe) => void;
-}
+// interface EditMenuProps {
+//     cafe: Cafe;
+//     onUpdate: (cafe: Cafe) => void;
+// }
 export default function EditMenu() {
     return (
         <div>

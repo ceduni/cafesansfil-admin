@@ -4,10 +4,10 @@ const API_BASE_URL = 'https://cafesansfil-api-r0kj.onrender.com/api';
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { slug: string; itemId: string } }
+    context: { params: Promise<{ slug: string; itemId: string }> }
 ) {
     try {
-        const { slug, itemId } = params;
+        const { slug, itemId } = await context.params;
         const authHeader = request.headers.get('authorization');
 
         if (!authHeader) {
@@ -53,10 +53,10 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { slug: string; itemId: string } }
+    context: { params: Promise<{ slug: string; itemId: string }> }
 ) {
     try {
-        const { slug, itemId } = params;
+        const { slug, itemId } = await context.params;
         const authHeader = request.headers.get('authorization');
 
         if (!authHeader) {
