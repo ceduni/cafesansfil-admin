@@ -84,6 +84,7 @@ export interface MenuItem {
   image_url: string | null;
   price: number;
   in_stock: boolean;
+  is_highlighted?: boolean;
   likes: string[];
   barecode: string | null;
   nutritional_informations: NutritionalInformations | null;

@@ -13,6 +13,8 @@ interface OwnerEditorProps {
 export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [owner, setOwner] = useState<Owner>(cafe.owner);
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -22,6 +24,20 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
       setIsSaving(true);
       setError(null);
 
+      // Validate password if being changed
+      if (password || confirmPassword) {
+        if (password !== confirmPassword) {
+          setError("Passwords do not match");
+          setIsSaving(false);
+          return;
+        }
+        if (password.length < 6) {
+          setError("Password must be at least 6 characters long");
+          setIsSaving(false);
+          return;
+        }
+      }
+
       // Build the payload with only changed fields
       const payload: UpdateUserPayload = {};
 
@@ -30,6 +46,7 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
       if (owner.first_name !== cafe.owner.first_name) payload.first_name = owner.first_name;
       if (owner.last_name !== cafe.owner.last_name) payload.last_name = owner.last_name;
       if (owner.photo_url !== cafe.owner.photo_url) payload.photo_url = owner.photo_url;
+      if (password) payload.password = password;
 
       // Only make the API call if there are changes
       if (Object.keys(payload).length === 0) {
@@ -42,6 +59,8 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
       // Update the cafe object with the new owner data
       onUpdate({ ...cafe, owner: updatedUser });
       setOwner(updatedUser);
+      setPassword("");
+      setConfirmPassword("");
       setIsEditing(false);
     } catch (err: any) {
       console.error('Error saving owner:', err);
@@ -67,6 +86,8 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
 
   const handleCancel = () => {
     setOwner(cafe.owner);
+    setPassword("");
+    setConfirmPassword("");
     setIsEditing(false);
     setError(null);
   };
@@ -139,6 +160,29 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
               />
             </div>
 
+            <div className="form-group">
+              <label className="form-label">New Password (optional)</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="form-input"
+                placeholder="Enter new password (min. 6 characters)"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="form-input"
+                placeholder="Confirm new password"
+                disabled={!password}
+              />
+            </div>
+
             <div className="form-group" style={{ gridColumn: "1 / -1" }}>
               <label className="form-label">Photo</label>
               <input
@@ -173,6 +217,19 @@ export default function OwnerEditor({ cafe, onUpdate }: OwnerEditorProps) {
               )}
             </div>
           </div>
+
+          {password && confirmPassword && password !== confirmPassword && (
+            <div style={{
+              padding: "0.75rem",
+              marginTop: "1rem",
+              backgroundColor: "rgba(255, 193, 7, 0.1)",
+              color: "#ff9800",
+              border: "1px solid #ff9800",
+              borderRadius: "0.375rem"
+            }}>
+              Passwords do not match
+            </div>
+          )}
 
           {error && (
             <div style={{

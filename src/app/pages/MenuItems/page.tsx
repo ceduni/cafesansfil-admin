@@ -12,6 +12,9 @@ import {
     deleteMenuItem,
     fetchCategories,
     createCategory,
+    updateCategory,
+    deleteCategory,
+    toggleItemHighlight,
     CreateMenuItemPayload,
 } from "../../back/menuItems";
 import { uploadImage } from "../../back/update";
@@ -46,6 +49,11 @@ export default function MenuItemsPage() {
     const [newCategoryDescription, setNewCategoryDescription] = useState("");
     const [isCreatingCategory, setIsCreatingCategory] = useState(false);
     const [categoryError, setCategoryError] = useState<string | null>(null);
+
+    // Category management state
+    const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+    const [editingCategory, setEditingCategory] = useState<any | null>(null);
+    const [categoryFormData, setCategoryFormData] = useState({ name: "", description: "" });
 
     useEffect(() => {
         const initializePage = async () => {
@@ -194,6 +202,79 @@ export default function MenuItemsPage() {
         }
     };
 
+    const handleToggleHighlight = async (itemId: string) => {
+        try {
+            const updatedItem = await toggleItemHighlight(cafeSlug, itemId);
+            setItems(items.map((item) => (item.id === updatedItem.id ? updatedItem : item)));
+        } catch (err: any) {
+            alert(err.message || "Failed to toggle highlight");
+        }
+    };
+
+    const handleOpenCategoryModal = (category?: any) => {
+        if (category) {
+            setEditingCategory(category);
+            setCategoryFormData({ name: category.name, description: category.description || "" });
+        } else {
+            setEditingCategory({});  // Empty object to indicate new category mode
+            setCategoryFormData({ name: "", description: "" });
+        }
+        setIsCategoryModalOpen(true);
+    };
+
+    const handleCloseCategoryModal = () => {
+        setIsCategoryModalOpen(false);
+        setEditingCategory(null);
+        setCategoryFormData({ name: "", description: "" });
+        setCategoryError(null);
+    };
+
+    const handleSaveCategory = async () => {
+        if (!categoryFormData.name.trim()) {
+            setCategoryError('Name is required');
+            return;
+        }
+
+        try {
+            setIsCreatingCategory(true);
+            setCategoryError(null);
+
+            // Build payload with only non-empty fields
+            const payload: { name: string; description?: string } = {
+                name: categoryFormData.name.trim()
+            };
+
+            if (categoryFormData.description.trim()) {
+                payload.description = categoryFormData.description.trim();
+            }
+
+            if (editingCategory) {
+                const updated = await updateCategory(cafeSlug, editingCategory.id, payload);
+                setCategories(categories.map((cat) => (cat.id === updated.id ? updated : cat)));
+            } else {
+                const created = await createCategory(cafeSlug, payload);
+                setCategories([created, ...categories]);
+            }
+            handleCloseCategoryModal();
+        } catch (err: any) {
+            console.error('Save category failed', err);
+            setCategoryError(err.message || 'Failed to save category');
+        } finally {
+            setIsCreatingCategory(false);
+        }
+    };
+
+    const handleDeleteCategory = async (categoryId: string) => {
+        if (!confirm("Are you sure you want to delete this category?")) return;
+
+        try {
+            await deleteCategory(cafeSlug, categoryId);
+            setCategories(categories.filter((cat) => cat.id !== categoryId));
+        } catch (err: any) {
+            alert(err.message || "Failed to delete category");
+        }
+    };
+
     const addOption = () => {
         setFormData({
             ...formData,
@@ -217,6 +298,82 @@ export default function MenuItemsPage() {
     const filteredItems = items.filter((item) =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
         (selectedCategoryFilter ? (item.category_ids || []).includes(selectedCategoryFilter) : true)
+    );
+
+    const highlightedItems = filteredItems.filter((item) => item.is_highlighted);
+    const regularItems = filteredItems.filter((item) => !item.is_highlighted);
+
+    const renderItemCard = (item: MenuItem) => (
+        <div key={item.id} className="cafe-card" style={{ position: 'relative', border: item.is_highlighted ? '2px solid gold' : undefined }}>
+
+            {item.image_url && (
+                <img
+                    src={item.image_url}
+                    alt={item.name}
+                    style={{
+                        width: "100%",
+                        height: "200px",
+                        objectFit: "cover",
+                        borderRadius: "0.5rem",
+                        marginBottom: "1rem",
+                    }}
+                />
+            )}
+            <h3 style={{ fontSize: "1.25rem", fontWeight: "600", marginBottom: "0.5rem" }}>{item.name}</h3>
+            {item.category_ids && item.category_ids.length > 0 && (
+                <div style={{ marginBottom: "0.5rem", display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {item.category_ids.map((cid) => {
+                        const cat = categories.find((c) => c.id === cid);
+                        if (!cat) return null;
+                        return (
+                            <span key={cid} style={{
+                                background: 'var(--muted)',
+                                color: 'var(--foreground)',
+                                padding: '0.25rem 0.5rem',
+                                borderRadius: '0.25rem',
+                                fontSize: '0.85rem'
+                            }}>{cat.name}</span>
+                        );
+                    })}
+                </div>
+            )}
+            {item.description && (
+                <p style={{ color: "var(--muted-foreground)", marginBottom: "1rem", fontSize: "0.875rem" }}>
+                    {item.description}
+                </p>
+            )}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+                <span style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--primary)" }}>
+                    ${typeof item.price === 'number' ? item.price.toFixed(2) : Number(item.price).toFixed(2)}
+                </span>
+                <span className={item.in_stock ? "status-online" : "status-offline"}>
+                    {item.in_stock ? "En stock" : "En rupture"}
+                </span>
+            </div>
+            {item.options && item.options.length > 0 && (
+                <div style={{ marginBottom: "1rem", fontSize: "0.875rem" }}>
+                    <strong>Options:</strong> {item.options.length}
+                </div>
+            )}
+            <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                <button
+                    onClick={() => handleToggleHighlight(item.id)}
+                    className={`btn ${item.is_highlighted ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: 1 }}
+                    title={item.is_highlighted ? "Remove highlight" : "Highlight item"}
+                >
+                    {item.is_highlighted ? "Retirer des articles en vedette" : "Ajouter aux articles en vedette"}
+                </button>
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button onClick={() => handleOpenModal(item)} className="btn btn-secondary" style={{ flex: 1 }}>
+                    Edit
+                </button>
+                <button onClick={() => handleDelete(item.id)} className="btn btn-destructive" style={{ flex: 1 }}>
+                    Delete
+                </button>
+            </div>
+        </div>
     );
 
     if (isLoading) {
@@ -269,10 +426,13 @@ export default function MenuItemsPage() {
                     <button onClick={() => handleOpenModal()} className="btn btn-primary">
                         + Add Item
                     </button>
+                    <button onClick={() => setIsCategoryModalOpen(true)} className="btn btn-secondary">
+                        Manage Categories
+                    </button>
                 </div>
 
                 {/* Category quick filters */}
-                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", alignItems: "center", flexWrap: "wrap" }}>
                     <button
                         className={`btn ${selectedCategoryFilter === null ? 'btn-primary' : 'btn-secondary'}`}
                         onClick={() => setSelectedCategoryFilter(null)}
@@ -292,70 +452,28 @@ export default function MenuItemsPage() {
                     ))}
                 </div>
 
-                {/* Items Grid */}
-                <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
-                    {filteredItems.map((item) => (
-                        <div key={item.id} className="cafe-card">
-                            {item.image_url && (
-                                <img
-                                    src={item.image_url}
-                                    alt={item.name}
-                                    style={{
-                                        width: "100%",
-                                        height: "200px",
-                                        objectFit: "cover",
-                                        borderRadius: "0.5rem",
-                                        marginBottom: "1rem",
-                                    }}
-                                />
-                            )}
-                            <h3 style={{ fontSize: "1.25rem", fontWeight: "600", marginBottom: "0.5rem" }}>{item.name}</h3>
-                            {/* Category names for the item */}
-                            {item.category_ids && item.category_ids.length > 0 && (
-                                <div style={{ marginBottom: "0.5rem", display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    {item.category_ids.map((cid) => {
-                                        const cat = categories.find((c) => c.id === cid);
-                                        if (!cat) return null;
-                                        return (
-                                            <span key={cid} style={{
-                                                background: 'var(--muted)',
-                                                color: 'var(--foreground)',
-                                                padding: '0.25rem 0.5rem',
-                                                borderRadius: '0.25rem',
-                                                fontSize: '0.85rem'
-                                            }}>{cat.name}</span>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                            {item.description && (
-                                <p style={{ color: "var(--muted-foreground)", marginBottom: "1rem", fontSize: "0.875rem" }}>
-                                    {item.description}
-                                </p>
-                            )}
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                                <span style={{ fontSize: "1.5rem", fontWeight: "bold", color: "var(--primary)" }}>
-                                    ${item.price}
-                                </span>
-                                <span className={item.in_stock ? "status-online" : "status-offline"}>
-                                    {item.in_stock ? "In Stock" : "Out of Stock"}
-                                </span>
-                            </div>
-                            {item.options && item.options.length > 0 && (
-                                <div style={{ marginBottom: "1rem", fontSize: "0.875rem" }}>
-                                    <strong>Options:</strong> {item.options.length}
-                                </div>
-                            )}
-                            <div style={{ display: "flex", gap: "0.5rem" }}>
-                                <button onClick={() => handleOpenModal(item)} className="btn btn-secondary" style={{ flex: 1 }}>
-                                    Edit
-                                </button>
-                                <button onClick={() => handleDelete(item.id)} className="btn btn-destructive" style={{ flex: 1 }}>
-                                    Delete
-                                </button>
-                            </div>
+                {/* Highlighted Items Section */}
+                {highlightedItems.length > 0 && (
+                    <div style={{ marginBottom: "2rem" }}>
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                            Articles en vedette
+                        </h2>
+                        <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+                            {highlightedItems.map((item) => renderItemCard(item))}
                         </div>
-                    ))}
+                    </div>
+                )}
+
+                {/* Regular Items Section */}
+                <div>
+                    {highlightedItems.length > 0 && (
+                        <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1rem" }}>
+                            Tous les articles
+                        </h2>
+                    )}
+                    <div style={{ display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))" }}>
+                        {regularItems.map((item) => renderItemCard(item))}
+                    </div>
                 </div>
 
                 {filteredItems.length === 0 && (
@@ -517,7 +635,7 @@ export default function MenuItemsPage() {
                                             checked={formData.in_stock}
                                             onChange={(e) => setFormData({ ...formData, in_stock: e.target.checked })}
                                         />
-                                        In Stock
+                                        En stock
                                     </label>
                                 </div>
 
@@ -569,6 +687,168 @@ export default function MenuItemsPage() {
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* Category Management Modal */}
+                {isCategoryModalOpen && !editingCategory && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: "rgba(0, 0, 0, 0.5)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 1000,
+                            padding: "1rem",
+                        }}
+                        onClick={handleCloseCategoryModal}
+                    >
+                        <div
+                            className="card"
+                            style={{
+                                maxWidth: "600px",
+                                width: "100%",
+                                maxHeight: "90vh",
+                                overflowY: "auto",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+                                <h2 style={{ fontSize: "1.5rem", fontWeight: "bold" }}>
+                                    Manage Categories
+                                </h2>
+                                <button onClick={() => handleOpenCategoryModal()} className="btn btn-primary">
+                                    + Add Category
+                                </button>
+                            </div>
+
+                            {categories.length === 0 ? (
+                                <div style={{ textAlign: "center", padding: "2rem", color: "var(--muted-foreground)" }}>
+                                    <p>No categories yet. Create one to get started!</p>
+                                </div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                                    {categories.map((cat) => (
+                                        <div
+                                            key={cat.id}
+                                            style={{
+                                                display: "flex",
+                                                justifyContent: "space-between",
+                                                alignItems: "center",
+                                                padding: "1rem",
+                                                border: "1px solid var(--border)",
+                                                borderRadius: "0.5rem",
+                                                background: "var(--muted)"
+                                            }}
+                                        >
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: "600", marginBottom: "0.25rem" }}>{cat.name}</div>
+                                                {cat.description && (
+                                                    <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
+                                                        {cat.description}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                                                <button
+                                                    onClick={() => handleOpenCategoryModal(cat)}
+                                                    className="btn btn-secondary"
+                                                    style={{ padding: "0.5rem 0.75rem" }}
+                                                >
+                                                    ✏️ Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteCategory(cat.id)}
+                                                    className="btn btn-destructive"
+                                                    style={{ padding: "0.5rem 0.75rem" }}
+                                                >
+                                                    🗑️ Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div style={{ marginTop: "1.5rem" }}>
+                                <button onClick={handleCloseCategoryModal} className="btn btn-secondary" style={{ width: "100%" }}>
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Category Form Modal (Add/Edit) */}
+                {editingCategory !== null && (
+                    <div
+                        style={{
+                            position: "fixed",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: "rgba(0, 0, 0, 0.5)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 1001,
+                            padding: "1rem",
+                        }}
+                        onClick={handleCloseCategoryModal}
+                    >
+                        <div
+                            className="card"
+                            style={{
+                                maxWidth: "500px",
+                                width: "100%",
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h2 style={{ fontSize: "1.5rem", fontWeight: "bold", marginBottom: "1.5rem" }}>
+                                {editingCategory.id ? "Edit Category" : "Add New Category"}
+                            </h2>
+
+                            <div className="form-group">
+                                <label className="form-label">Category Name *</label>
+                                <input
+                                    type="text"
+                                    value={categoryFormData.name}
+                                    onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                                    className="form-input"
+                                    placeholder="Enter category name"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Description (optional)</label>
+                                <textarea
+                                    value={categoryFormData.description}
+                                    onChange={(e) => setCategoryFormData({ ...categoryFormData, description: e.target.value })}
+                                    className="form-textarea"
+                                    rows={3}
+                                    placeholder="Enter category description"
+                                />
+                            </div>
+
+                            {categoryError && (
+                                <div style={{ color: "var(--destructive)", marginBottom: "1rem" }}>{categoryError}</div>
+                            )}
+
+                            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.5rem" }}>
+                                <button onClick={handleSaveCategory} className="btn btn-success" disabled={isCreatingCategory} style={{ flex: 1 }}>
+                                    {isCreatingCategory ? "Saving..." : editingCategory.id ? "Update Category" : "Create Category"}
+                                </button>
+                                <button onClick={handleCloseCategoryModal} className="btn btn-secondary" disabled={isCreatingCategory} style={{ flex: 1 }}>
+                                    Cancel
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
