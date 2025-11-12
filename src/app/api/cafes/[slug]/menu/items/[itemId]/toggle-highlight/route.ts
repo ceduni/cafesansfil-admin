@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = 'https://cafesansfil-api-r0kj.onrender.com/api';
+const API_BASE_URL = 'https://api.cafesansfil.ca/v1';
 
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { slug: string; itemId: string } }
+    { params }: { params: Promise<{ slug: string; itemId: string }> }
 ) {
     try {
         const authHeader = req.headers.get('authorization');
@@ -13,7 +13,7 @@ export async function PUT(
             return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
         }
 
-        const { slug, itemId } = params;
+        const { slug, itemId } = await params;
 
         const response = await fetch(`${API_BASE_URL}/cafes/${slug}/menu/items/${itemId}/toggle-highlight`, {
             method: 'PUT',

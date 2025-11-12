@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://cafesansfil-api-r0kj.onrender.com/api/:path*',
+        destination: 'https://api.cafesansfil.ca/v1/:path*',
       },
     ];
   },

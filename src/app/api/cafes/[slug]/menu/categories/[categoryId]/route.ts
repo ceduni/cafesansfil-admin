@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = 'https://cafesansfil-api-r0kj.onrender.com/api';
+const API_BASE_URL = 'https://api.cafesansfil.ca/v1';
 
 export async function PUT(
     req: NextRequest,
-    { params }: { params: { slug: string; categoryId: string } }
+    { params }: { params: Promise<{ slug: string; categoryId: string }> }
 ) {
     try {
         const authHeader = req.headers.get('authorization');
@@ -14,7 +14,7 @@ export async function PUT(
         }
 
         const body = await req.json();
-        const { slug, categoryId } = params;
+        const { slug, categoryId } = await params;
 
         const response = await fetch(`${API_BASE_URL}/cafes/${slug}/menu/categories/${categoryId}`, {
             method: 'PUT',
@@ -43,7 +43,7 @@ export async function PUT(
 
 export async function DELETE(
     req: NextRequest,
-    { params }: { params: { slug: string; categoryId: string } }
+    { params }: { params: Promise<{ slug: string; categoryId: string }> }
 ) {
     try {
         const authHeader = req.headers.get('authorization');
@@ -52,7 +52,7 @@ export async function DELETE(
             return NextResponse.json({ error: 'Authorization required' }, { status: 401 });
         }
 
-        const { slug, categoryId } = params;
+        const { slug, categoryId } = await params;
 
         const response = await fetch(`${API_BASE_URL}/cafes/${slug}/menu/categories/${categoryId}`, {
             method: 'DELETE',

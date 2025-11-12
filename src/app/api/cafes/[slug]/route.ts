@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = 'https://cafesansfil-api-r0kj.onrender.com/api';
+const API_BASE_URL = 'https://api.cafesansfil.ca/v1';
 
 export async function GET(
     request: NextRequest,
