@@ -396,9 +396,26 @@ export default function EventsPage() {
                                 <div className="form-group">
                                     <label className="form-label">Start Date *</label>
                                     <input
-                                        type="datetime-local"
-                                        value={formData.start_date ? new Date(formData.start_date).toISOString().slice(0, 16) : ""}
-                                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value ? new Date(e.target.value).toISOString() : "" })}
+                                        type="date"
+                                        value={formData.start_date ? formData.start_date.split('T')[0] : ""}
+                                        onChange={(e) => {
+                                            const currentTime = formData.start_date ? formData.start_date.split('T')[1] : "09:00:00.000Z";
+                                            setFormData({ ...formData, start_date: e.target.value ? `${e.target.value}T${currentTime}` : "" });
+                                        }}
+                                        className="form-input"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Start Time *</label>
+                                    <input
+                                        type="time"
+                                        value={formData.start_date ? formData.start_date.split('T')[1]?.slice(0, 5) || "09:00" : "09:00"}
+                                        onChange={(e) => {
+                                            const currentDate = formData.start_date ? formData.start_date.split('T')[0] : new Date().toISOString().split('T')[0];
+                                            setFormData({ ...formData, start_date: `${currentDate}T${e.target.value}:00.000Z` });
+                                        }}
                                         className="form-input"
                                         required
                                     />
@@ -407,9 +424,26 @@ export default function EventsPage() {
                                 <div className="form-group">
                                     <label className="form-label">End Date *</label>
                                     <input
-                                        type="datetime-local"
-                                        value={formData.end_date ? new Date(formData.end_date).toISOString().slice(0, 16) : ""}
-                                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value ? new Date(e.target.value).toISOString() : "" })}
+                                        type="date"
+                                        value={formData.end_date ? formData.end_date.split('T')[0] : ""}
+                                        onChange={(e) => {
+                                            const currentTime = formData.end_date ? formData.end_date.split('T')[1] : "17:00:00.000Z";
+                                            setFormData({ ...formData, end_date: e.target.value ? `${e.target.value}T${currentTime}` : "" });
+                                        }}
+                                        className="form-input"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">End Time *</label>
+                                    <input
+                                        type="time"
+                                        value={formData.end_date ? formData.end_date.split('T')[1]?.slice(0, 5) || "17:00" : "17:00"}
+                                        onChange={(e) => {
+                                            const currentDate = formData.end_date ? formData.end_date.split('T')[0] : new Date().toISOString().split('T')[0];
+                                            setFormData({ ...formData, end_date: `${currentDate}T${e.target.value}:00.000Z` });
+                                        }}
                                         className="form-input"
                                         required
                                     />

@@ -281,12 +281,36 @@ body {
   .admin-layout {
     grid-template-columns: 1fr;
   }
-  
-  .sidebar {
-    display: none;
+
+  /* Show hamburger button on mobile */
+  .mobile-nav-toggle {
+    display: block !important;
   }
-  
+
+  /* Show overlay when menu is open */
+  .mobile-menu-overlay {
+    display: block !important;
+  }
+
+  /* Hide sidebar by default on mobile */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 280px;
+    height: 100vh;
+    z-index: 1000;
+    transition: left 0.3s ease;
+  }
+
+  /* Show sidebar when mobile menu is open */
+  .sidebar.mobile-open {
+    left: 0;
+  }
+
   .main-content {
     padding: 1rem;
+    padding-top: 4rem;
+    /* Space for hamburger button */
   }
 }
