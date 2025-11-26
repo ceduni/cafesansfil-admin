@@ -4,6 +4,7 @@ import fetchCafe from "@/app/back/fetch";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser, getAccessToken } from "../../back/post";
+import { updateCafe } from "../../back/update";
 import EditDescription from "../../components/EditDescription";
 import Sidebar from "../../components/Sidebar";
 import ImageEditor from "../../components/ImageEditor";
@@ -76,6 +77,25 @@ export default function HomePage() {
         }
     };
 
+    const handleStatusToggle = async () => {
+        if (!cafe) return;
+
+        try {
+            const newStatus = !cafe.is_open;
+
+            // Optimistically update the UI
+            setCafe({ ...cafe, is_open: newStatus });
+
+            // Update the cafe status via API
+            await updateCafe(cafe.slug, { is_open: newStatus });
+        } catch (error) {
+            console.error("Failed to update cafe status:", error);
+            // Revert the optimistic update on error
+            setCafe({ ...cafe, is_open: !cafe.is_open });
+            alert("Failed to update cafe status. Please try again.");
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="admin-layout">
@@ -139,10 +159,34 @@ export default function HomePage() {
                         </div>
                         <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
                             <div>
-                                <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>Status</div>
-                                <div className={cafe?.is_open ? "status-online" : "status-offline"}>
-                                    {cafe?.is_open ? "Open" : "Closed"}
+                                <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)", marginBottom: "0.5rem" }}>
+                                    Status (cliquez pour changer)
                                 </div>
+                                <button
+                                    onClick={handleStatusToggle}
+                                    className={cafe?.is_open ? "status-online" : "status-offline"}
+                                    style={{
+                                        cursor: "pointer",
+                                        border: "2px solid currentColor",
+                                        padding: "0.5rem 1rem",
+                                        borderRadius: "0.5rem",
+                                        fontWeight: "600",
+                                        transition: "all 0.2s",
+                                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                        textAlign: "center",
+                                        display: "inline-block",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = "translateY(-2px)";
+                                        e.currentTarget.style.boxShadow = "0 4px 8px rgba(0,0,0,0.15)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = "translateY(0)";
+                                        e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                                    }}
+                                >
+                                    {cafe?.is_open ? "Visible" : "Caché"}
+                                </button>
                             </div>
                             <div>
                                 <div style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>Location</div>
