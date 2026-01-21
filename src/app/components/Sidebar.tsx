@@ -56,6 +56,7 @@ export default function Sidebar() {
     { name: "Dashboard", icon: "ℹ️", path: "/pages/HomePage" },
     { name: "Menu Items", icon: "🍽️", path: "/pages/MenuItems" },
     { name: "Events", icon: "📅", path: "/pages/Events" },
+    { name : "Announcements", icon: "📣", path: "/pages/Announcements"}
   ];
 
   // Get user info on mount
