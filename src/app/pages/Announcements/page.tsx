@@ -132,29 +132,9 @@ export default function AnnouncementsPage() {
             if (editingAnnouncement) {
                 const updated = await updateAnnouncement(cafeSlug, editingAnnouncement.id, formData);
                 setAnnouncements(announcements.map((ann) => (ann.id === updated.id ? updated : ann)));
-
-                // Send notification for edited announcement
-                try {
-                    await sendNotification({
-                        title: `Annonce modifiée: ${updated.title}`,
-                        body: updated.content.substring(0, 100) + (updated.content.length > 100 ? "..." : "")
-                    });
-                } catch (notifErr) {
-                    console.error('Failed to send notification:', notifErr);
-                }
             } else {
                 const created = await createAnnouncement(cafeSlug, formData);
                 setAnnouncements([created, ...announcements]);
-
-                // Send notification for new announcement
-                try {
-                    await sendNotification({
-                        title: `Nouvelle annonce: ${created.title}`,
-                        body: created.content.substring(0, 100) + (created.content.length > 100 ? "..." : "")
-                    });
-                } catch (notifErr) {
-                    console.error('Failed to send notification:', notifErr);
-                }
             }
             handleCloseModal();
         } catch (err: any) {
