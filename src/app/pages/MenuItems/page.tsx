@@ -216,7 +216,7 @@ export default function MenuItemsPage() {
             setEditingCategory(category);
             setCategoryFormData({ name: category.name, description: category.description || "" });
         } else {
-            setEditingCategory({});  // Empty object to indicate new category mode
+            setEditingCategory({});
             setCategoryFormData({ name: "", description: "" });
         }
         setIsCategoryModalOpen(true);
@@ -248,7 +248,7 @@ export default function MenuItemsPage() {
                 payload.description = categoryFormData.description.trim();
             }
 
-            if (editingCategory) {
+            if (editingCategory?.id) {
                 const updated = await updateCategory(cafeSlug, editingCategory.id, payload);
                 setCategories(categories.map((cat) => (cat.id === updated.id ? updated : cat)));
             } else {
